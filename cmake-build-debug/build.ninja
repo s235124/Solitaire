@@ -64,9 +64,9 @@ build CMakeFiles/Solitaire.dir/Main.c.obj: C_COMPILER__Solitaire_unscanned_Debug
 #############################################
 # Link the executable Solitaire.exe
 
-build Solitaire.exe: C_EXECUTABLE_LINKER__Solitaire_Debug CMakeFiles/Solitaire.dir/Main.c.obj | C$:/Users/ziabe/Documents/sdl/SDL2-2.30.2/x86_64-w64-mingw32/lib/libSDL2main.a C$:/Users/ziabe/Documents/sdl/SDL2-2.30.2/x86_64-w64-mingw32/lib/libSDL2.dll.a
+build Solitaire.exe: C_EXECUTABLE_LINKER__Solitaire_Debug CMakeFiles/Solitaire.dir/Main.c.obj | C$:/Users/ziabe/Documents/sdl/SDL2-2.30.2/x86_64-w64-mingw32/lib/libSDL2main.a C$:/Users/ziabe/Documents/sdl/SDL2-2.30.2/x86_64-w64-mingw32/lib/libSDL2.dll.a SDL2_image.dll
   FLAGS = -g
-  LINK_LIBRARIES = -lmingw32  -mwindows  C:/Users/ziabe/Documents/sdl/SDL2-2.30.2/x86_64-w64-mingw32/lib/libSDL2main.a  C:/Users/ziabe/Documents/sdl/SDL2-2.30.2/x86_64-w64-mingw32/lib/libSDL2.dll.a  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
+  LINK_LIBRARIES = -lmingw32  -mwindows  C:/Users/ziabe/Documents/sdl/SDL2-2.30.2/x86_64-w64-mingw32/lib/libSDL2main.a  C:/Users/ziabe/Documents/sdl/SDL2-2.30.2/x86_64-w64-mingw32/lib/libSDL2.dll.a  SDL2_image.dll  -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\Solitaire.dir
   POST_BUILD = cd .
   PRE_LINK = cd .
