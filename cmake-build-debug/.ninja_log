@@ -1,3 +1,6 @@
 # ninja log v5
-1	69	7338577659603300	CMakeFiles/Solitaire.dir/Main.c.obj	793f9e53455ca387
-70	166	7338577660533486	Solitaire.exe	5463d93a58d257ad
+1	61	7338583985890249	CMakeFiles/Solitaire.dir/Main.c.obj	793f9e53455ca387
+62	130	7338583986540250	Solitaire.exe	31c3a73649f9b625
+6	53	7338583985799751	CMakeFiles/Solitaire.dir/Add.c.obj	76237d7322ffcc37
+2	459	7339215606270119	CMakeFiles/Solitaire.dir/Main.c.obj	d94038ac7ed30de4
+461	578	7339215607429547	Solitaire.exe	af8867923da43f6d
