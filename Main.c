@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdbool.h>
-#include <SDL.h>
-#include <ddraw.h>
-#include <SDL_image.h>
+//#include <SDL.h>
+//#include <ddraw.h>
+//#include <SDL_image.h>
 
 typedef struct CardStruct {
     int number;
@@ -13,15 +13,16 @@ typedef struct CardStruct {
 } Card;
 
 // Subroutines in the program
-void sdlExample();
+//void sdlExample();
 void show();
 void load();
 void printFileLines(const char *filename, Card* cards);
 
 int main(int argc, char* argv[]) {
+    //sdlExample();
     Card cards[52];
 
-    printFileLines("C:\\Users\\ziabe\\CLionProjects\\Solitaire\\file.txt", &cards[0]);
+    printFileLines("/Users/mohammedismail/CLionProjects/Solitaire/file.txt", &cards[0]);
 
     return 0;
 }
@@ -68,7 +69,7 @@ void columns (Card* finalCard) {
 void show () {
 
 }
-
+/*
 void sdlExample () {
     // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
@@ -94,7 +95,7 @@ void sdlExample () {
         return;
     }
 
-    SDL_Surface* lettuce_sur = IMG_Load("C:\\Users\\ziabe\\CLionProjects\\Solitaire\\BarackOsama.png");
+    SDL_Surface* lettuce_sur = IMG_Load("/Users/mohammedismail/CLionProjects/Solitaire/BarackOsama.png");
     if (lettuce_sur == NULL) {
         SDL_Log("Error loading image: ", IMG_GetError());
         return;
@@ -126,4 +127,4 @@ void sdlExample () {
     SDL_DestroyWindow(window);
     IMG_Quit();
     SDL_Quit();
-}
+}*/
