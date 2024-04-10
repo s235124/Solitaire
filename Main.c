@@ -6,6 +6,7 @@
 
 // Subroutines in the program
 void sdlExample();
+void show();
 
 typedef struct CardStruct {
     int number;
@@ -17,19 +18,16 @@ typedef struct CardStruct {
 
 int main(int argc, char* argv[]) {
 
-    sdlExample();
+
 
     return 0;
 }
 
-void sdlExample () {
-    Card c;
-    c.number = 5;
-    c.suit = 'D';
-    c.facingDir = true;
-    c.displayedChars[0] = '5';
-    c.displayedChars[1] = 'D';
+void show () {
 
+}
+
+void sdlExample () {
     // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
         SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
