@@ -4,10 +4,6 @@
 #include <ddraw.h>
 #include <SDL_image.h>
 
-// Subroutines in the program
-void sdlExample();
-void show();
-
 typedef struct CardStruct {
     int number;
     char suit;
@@ -16,11 +12,57 @@ typedef struct CardStruct {
     bool facingDown;
 } Card;
 
+// Subroutines in the program
+void sdlExample();
+void show();
+void load();
+void printFileLines(const char *filename, Card* cards);
+
 int main(int argc, char* argv[]) {
+    Card cards[52];
 
-
+    printFileLines("C:\\Users\\ziabe\\CLionProjects\\Solitaire\\file.txt", &cards[0]);
 
     return 0;
+}
+
+void load () {
+
+}
+
+void printFileLines(const char *filename, Card* cards) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("Could not open file %s\n", filename);
+        return;
+    }
+
+    char line[256];
+    int i = 0;
+
+    while (fgets(line, sizeof(line), file)) {
+        if (i == 0) {
+            cards[i].displayedChars[0] = line[0];
+            cards[i].displayedChars[1] = line[1];
+
+            cards[i].next = 0;
+        }
+        else {
+            cards[i].displayedChars[0] = line[0];
+            cards[i].displayedChars[1] = line[1];
+
+            cards[i].next = &(cards[i-1]);
+        }
+
+        printf("%c  %c\n", cards[i].displayedChars[0], cards[i].displayedChars[1]);
+
+        i++;
+    }
+
+    fclose(file);
+}
+void columns (Card* finalCard) {
+
 }
 
 void show () {
