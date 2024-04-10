@@ -12,7 +12,7 @@ typedef struct CardStruct {
     char suit;
     char displayedChars[2];
     struct CardStruct* next;
-    bool facingDir;
+    bool facingDown;
 } Card;
 
 int main(int argc, char* argv[]) {
@@ -42,7 +42,7 @@ void sdlExample () {
     }
 
     // Create a window
-    SDL_Window *window = SDL_CreateWindow("Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_SHOWN);
+    SDL_Window *window = SDL_CreateWindow("Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 512, 512, SDL_WINDOW_SHOWN);
     if (!window) {
         SDL_Log("Failed to create window: %s", SDL_GetError());
         return;
@@ -79,18 +79,6 @@ void sdlExample () {
         SDL_RenderCopy(renderer, lettuce_tex, NULL, NULL);
         SDL_RenderPresent(renderer);
     }
-
-//    // Get the window's surface
-//    SDL_Surface *surface = SDL_GetWindowSurface(window);
-//
-//    // Fill the surface with blue color
-//    SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, 0, 0, 255));
-//
-//    // Update the surface
-//    SDL_UpdateWindowSurface(window);
-//
-//    // Wait for 3 seconds before quitting
-//    SDL_Delay(3000);
 
     // Cleanup
     SDL_DestroyTexture(lettuce_tex);
