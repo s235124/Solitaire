@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
 //#include <SDL.h>
 //#include <ddraw.h>
 //#include <SDL_image.h>
+
+#define realpath(N,R) _fullpath((R),(N),_MAX_PATH)
 
 typedef struct CardStruct {
     int number;
@@ -22,7 +25,14 @@ int main(int argc, char* argv[]) {
     //sdlExample();
     Card cards[52];
 
-    printFileLines("/Users/mohammedismail/CLionProjects/Solitaire/file.txt", &cards[0]);
+    char* relativePath = "../file.txt";
+    char absolutePath[1024];
+
+    if (realpath(relativePath, absolutePath) == NULL) {
+        return 1;
+    }
+
+    printFileLines(absolutePath, &cards[0]);
 
     return 0;
 }
