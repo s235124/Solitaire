@@ -64,7 +64,6 @@ int main(int argc, char* argv[]) {
 
     startshow();
 
-    //show(head, columns);
     char input[100];
     char prevInput[100];
     char message[100];
@@ -468,8 +467,6 @@ Card* split(const char *filename, int split){
     printf("length of the new pile %d \n", lengthoflist(newpile));
     printLinkedList(newpile);
     return newpile;
-
-    return 0;
 }
 
 
