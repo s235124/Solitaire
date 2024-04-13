@@ -66,24 +66,28 @@ int main(int argc, char* argv[]) {
 
     //show(head, columns);
     char input[100];
+    char prevInput[100];
+    char message[100];
     char filename[100];
+
     while (1){
+        strcpy(message, "OK");
         printf("INPUT: ");
+        fflush(stdout);
         fgets(input, sizeof(input), stdin);
+        strcpy(prevInput, input);
         // Check if input matches trigger string
         if (strstr(input, "SW") != NULL) {
             flipcard(columns);
-            show(head, columns);
         }else if (strstr(input, "LD") != NULL) {
 
             parseInput(input, filename);
-            printf("Filename: %s\n", filename);
+            //printf("Filename: %s\n", filename);
             head = linkedv(filename);
             if (head != NULL) {
                 createcolumns(head, columns);
-                show(head, columns);
             }else {
-                printf("Failed to load file: %s\n", filename);
+                strcpy(message, "Failed to load file.");
             }
         }else if (strstr(input, "SI") != NULL) {
             int splitNumber;
@@ -91,22 +95,25 @@ int main(int argc, char* argv[]) {
                 head = split(absolutePath, splitNumber);
                 if (head != NULL) {
                     createcolumns(head, columns);
-                    show(head, columns);
                 } else {
-                    printf("Failed to split the file.\n");
+                    strcpy(message,"Failed to split the file.");
                 }
             } else {
-                printf("Invalid input format for SI.\n");
+                strcpy(message,"Invalid input format for SI.");
             }
-        }else {
-            printf("v.\n");
+        }else if (strstr(input, "QQ") != NULL) {
+            break;
         }
+        else {
+            printf("v.");
+        }
+
+        show(head, columns);
+        printf("LAST COMMAND: %s", prevInput);
+        printf("Message: %s\n", message);
     }
+
     return 0;
-
-}
-
-void load () {
 
 }
 
@@ -148,7 +155,7 @@ Card* linkedv(const char *filename){
     Card* head = NULL;
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
-        printf("Could not open file %s\n", filename);
+//        printf("Could not open file %s\n", filename);
         return NULL;
     }
 
@@ -274,13 +281,15 @@ bool isCardPointingToColumn(Card* card) {
 }
 
 void show (Card* head, column columns[]) {
+    if (head == NULL) startshow();
+
     Card* current = head;
     Card lastcurrent[8];
     int t = 0;
 
     printf("\n");
     printf("C1  C2  C3  C4  C5  C6  C7\n");
-    printf("\n");
+    //printf("\n");
 
     for(t = 0;t < longestcolumn(columns) ;t++){
         for(int i = 0;i < 7 ;i++){
@@ -305,13 +314,13 @@ void show (Card* head, column columns[]) {
             }
 
         }
-        if(t == 0){
+        if(t == 1){
             printf("    []  F1");
-        } else if(t == 2){
+        } else if(t == 3){
             printf("    []  F2");
-        }else if(t == 4){
+        }else if(t == 5){
             printf("    []  F3");
-        }else if(t == 6){
+        }else if(t == 7){
             printf("    []  F4");
         }
 
@@ -319,9 +328,7 @@ void show (Card* head, column columns[]) {
 
     }
     printf("\n");
-    printf("LAST COMMAND: ");
-    printf("\n");
-    }
+}
 
 
 
