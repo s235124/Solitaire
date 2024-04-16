@@ -11,6 +11,7 @@
 typedef struct CardStruct {
     int number;
     char suit;
+    int column;
     bool isColumn;
     char displayedChars[2];
     struct CardStruct* next;
@@ -38,15 +39,26 @@ int longestcolumn (column columns[]);
 void flipcard (column columns[]);
 void parseInput(const char* input, char* filename);
 Card* split(const char *filename, int split);
+void insertCard(Card* head, int position, Card* newCard);
+Card* randomShuffle(const char *filename);
+void writeLinkedListToFile(const char *filename, Card* head);
+void copyFile(const char *sourcePath, const char *destinationPath);
+void createcolumns2 (Card* finalCard, column columns[]);
+void flipcard2 (column columns[]);
+void move(Card* from, Card* to, column columns[]);
+Card* findCard(char*card, column columns[]);
+void parseInput2(const char* input, char* card1, char* card2);
+Card* findColumn(int iteration, Card* head);
 int main(int argc, char* argv[]) {
     //sdlExample();
     Card cards[52];
-    Card* head = NULL;
-    char* relativePath = "../file.txt";
+    Card *head = NULL;
+    char *relativePath = "../file.txt";
     char absolutePath[1024];
 
     column columns[7];
-
+    char card1[3];
+    char card2[3];
     if (realpath(relativePath, absolutePath) == NULL) {
         return 1;
     }
@@ -69,7 +81,7 @@ int main(int argc, char* argv[]) {
     char message[100];
     char filename[100];
 
-    while (1){
+    while (1) {
         strcpy(message, "OK");
         printf("INPUT: ");
         fflush(stdout);
@@ -78,43 +90,72 @@ int main(int argc, char* argv[]) {
         // Check if input matches trigger string
         if (strstr(input, "SW") != NULL) {
             flipcard(columns);
-        }else if (strstr(input, "LD") != NULL) {
+        } else if (strstr(input, "LD") != NULL) {
 
             parseInput(input, filename);
             //printf("Filename: %s\n", filename);
             head = linkedv(filename);
             if (head != NULL) {
+                writeLinkedListToFile("currentd.txt", head);
+
                 createcolumns(head, columns);
-            }else {
+            } else {
                 strcpy(message, "Failed to load file.");
             }
-        }else if (strstr(input, "SI") != NULL) {
+
+        } else if (strstr(input, "SI") != NULL) {
             int splitNumber;
             if (sscanf(input, "SI %d", &splitNumber) == 1) {
-                head = split(absolutePath, splitNumber);
+                head = split("currentd.txt", splitNumber);
                 if (head != NULL) {
                     createcolumns(head, columns);
                 } else {
-                    strcpy(message,"Failed to split the file.");
+                    strcpy(message, "Failed to split the file.");
                 }
             } else {
-                strcpy(message,"Invalid input format for SI.");
+                strcpy(message, "Invalid input format for SI.");
             }
-        }else if (strstr(input, "QQ") != NULL) {
-            break;
+        } else if (strstr(input, "SR") != NULL) {
+            //printf("length of the top pile %d \n", lengthoflist(head));
+            head = randomShuffle("currentd.txt");
+            writeLinkedListToFile("currentd.txt", head);
+            createcolumns(head, columns);
+            flipcard(columns);
+        }else if (strstr(input, "SD") != NULL) {
+            parseInput(input , filename);
+            copyFile("currentd.txt",filename);
+
         }
-        else {
-            printf("v.");
+            else if (strstr(input, "QQ") != NULL) {
+                break;
+            }else if (strstr(input, "P") != NULL) {
+            head = linkedv("currentd.txt");
+            createcolumns2(head, columns);
+            flipcard2(columns);
+
+        }else if (strstr(input, "->") != NULL) {
+            parseInput2(input, card1, card2);
+            //printf(" first char of card1 %c second char of card1 %c  ", card1[0], card1[1]);
+            Card* cardc2 = findCard(card2, columns);
+            Card* cardc1 = findCard(card1, columns);
+
+            move(cardc2, cardc1, columns);
+            printf(" card %c  %c  has moved ", card2[0], card2[1]);
+        } else {
+                printf("v.");
+            }
+
+            //show(head, columns);
+            //move(columns[1].next->next, columns[3].next, columns);
+            show(head,columns);
+            printf("LAST COMMAND: %s", prevInput);
+            printf("Message: %s\n", message);
         }
 
-        show(head, columns);
-        printf("LAST COMMAND: %s", prevInput);
-        printf("Message: %s\n", message);
+        return 0;
+
     }
 
-    return 0;
-
-}
 
 void printFileLines(const char *filename, Card* cards) {
     FILE *file = fopen(filename, "r");
@@ -227,6 +268,23 @@ Card* iteratelist(int iteration, Card* head){
     return current;
 
 }
+Card* findColumn(int iteration, Card* head){
+    if(head == NULL){
+        return NULL;
+    }
+    Card* current = head;
+
+    for(int i = 0; i<iteration; i++){
+        //printf("%c  %c\n", current-> displayedChars[0], current->displayedChars[1]);
+        if (current->isColumn) {
+            return current;
+        }
+        current = current->next;
+
+    }
+    return current;
+
+}
 int lengthoflist(Card* head){
 
     int length = 0;
@@ -245,6 +303,42 @@ void createcolumns (Card* finalCard, column columns[]) {
     //for loop for creating the 7 columns
     for(int i = 0; i<7; i++){
 
+        columns[i].column = i+1;
+        columns[i].isColumn = true;
+        columns[i].next = &columns[i];
+    }
+    int totalcards = lengthoflist(finalCard);
+    //printf("%d", totalcards);
+    int assignedcards = 0;
+    Card* current = finalCard;
+    Card* newHead= finalCard;
+    //printf("%c  %c\n", current-> displayedChars[0], current->displayedChars[1]);
+    while(assignedcards< 52){
+        for(int i = 0;i < 7 ;i++){
+            current = iteratelist(0, newHead);//fetch first elememt in list
+
+            if(current == NULL){
+                //printf("Current is null v");
+                break;
+            }
+            //printf(" %c  %c\n", newHead-> displayedChars[0], newHead->displayedChars[1]);
+
+            newHead = current->next;
+
+
+            current->next = columns[i].next;//assign current cards pointer to column i
+            current->column = i;
+            printf("%c%c is in column %d", current->displayedChars[0],current->displayedChars[1], current->column);
+            columns[i].next = current;//assign column i's pointer to current, such that column i points to the end of the head of the list
+            //printf("columns %d %c  %c\n",i, columns[i].next-> displayedChars[0], columns[i].next->displayedChars[1]);
+            assignedcards++;
+        }
+    }
+}
+void createcolumns2 (Card* finalCard, column columns[]) {
+    //for loop for creating the 7 columns
+    for(int i = 0; i<7; i++){
+
         columns[i].number = i+1;
         columns[i].isColumn = true;
         columns[i].next = &columns[i];
@@ -255,13 +349,37 @@ void createcolumns (Card* finalCard, column columns[]) {
     Card* current = finalCard;
     Card* newHead= finalCard;
     //printf("%c  %c\n", current-> displayedChars[0], current->displayedChars[1]);
-    while(assignedcards<52){
+    while(assignedcards< 52){
         for(int i = 0;i < 7 ;i++){
             current = iteratelist(0, newHead);//fetch first elememt in list
 
             if(current == NULL){
                 //printf("Current is null v");
                 break;
+            }
+            if(i == 0 && assignedcards>1){
+                //printf("Current is null v");
+                i++;
+            }
+            if(i == 1 && assignedcards>36){
+                //printf("Current is null v");
+                i++;
+            }
+            if(i == 2 && assignedcards>37){
+                //printf("Current is null v");
+                i++;
+            }
+            if(i == 3 && assignedcards>42){
+                //printf("Current is null v");
+                i++;
+            }
+            if(i == 4 && assignedcards>47){
+                //printf("Current is null v");
+                i++;
+            }
+            if(i == 5 && assignedcards>50){
+                //printf("Current is null v");
+                i++;
             }
             //printf(" %c  %c\n", newHead-> displayedChars[0], newHead->displayedChars[1]);
 
@@ -288,9 +406,9 @@ void show (Card* head, column columns[]) {
 
     printf("\n");
     printf("C1  C2  C3  C4  C5  C6  C7\n");
-    //printf("\n");
+    printf("\n");
 
-    for(t = 0;t < longestcolumn(columns) ;t++){
+    for(t = 1;t < longestcolumn(columns) ;t++){
         for(int i = 0;i < 7 ;i++){
 
             current = iteratelist(lengthoflist(columns[i].next)-t,columns[i].next);
@@ -356,8 +474,45 @@ void flipcard (column columns[]){
 
     }
 }
+void flipcard2 (column columns[]){
+    for (int i = 0; i < 7; i++) {
+        int numberOfCardsToFlip = 5;
+        int cardsFlipped = 0;
+        Card* current = columns[i].next;
+
+        // Flip the specified number of cards in the column
+        while (current != NULL && cardsFlipped < numberOfCardsToFlip) {
+            current->facingDown = false;
+            current = current->next;
+            cardsFlipped++;
+        }
+    }
+}
+void move(Card* from, Card* to, column columns[]){
+if(from == NULL || to == NULL){
+    printf("Cards doesnt exist");
+    return;
+}
+
+    Card* fromColumn = findColumn(lengthoflist(from),from);
+
+    printf("initiate move card %c%c in column %d \n", from->displayedChars[0], from->displayedChars[1], fromColumn->column);
+
+    Card* lastCardinFrom = fromColumn->next;
+    printf("the last card in this column is %c%c ", lastCardinFrom->displayedChars[0], lastCardinFrom->displayedChars[1]);
+    printf("\n");
+    fromColumn->next = from->next;
+    printf("we move from columns pointer to point at %c%c", from->next->displayedChars[0], from->next->displayedChars[1]);
+    printf("\n");
+    from->next = to;
+    printf("we now set the card %c%c to point at %c%c", from->displayedChars[0], from->displayedChars[1], to->displayedChars[0], to->displayedChars[1]);
+    printf("\n");
+    from->column = to->column;
+
+    columns[to->column].next = lastCardinFrom;
 
 
+}
 
 void startshow () {
 
@@ -395,6 +550,24 @@ void parseInput(const char* input, char* filename) {
     } else {
         // No filename found
         filename[0] = '\0';
+    }
+}
+void parseInput2(const char* input, char* card1, char* card2) {
+    // Find the position of '->'
+    const char* arrow = strstr(input, "->");
+    if (arrow != NULL) {
+        // Calculate the length of the substring before '->'
+        strncpy(card2, input, arrow - input);
+        card2[arrow - input] = '\0';
+        //card1[2] = '\0'; // Null-terminate the first card
+        //printf("first char of card1 %c second char of card 1 %c  ", card1[0], card1[1]);
+
+        // Extract the second card after '->'
+        strcpy(card1, arrow + strlen("->"));
+    } else {
+        // If '->' is not found, set both cards to empty strings
+        card1[0] = '\0';
+        card2[0] = '\0';
     }
 }
 
@@ -469,6 +642,133 @@ Card* split(const char *filename, int split){
     return newpile;
 }
 
+
+Card* randomShuffle(const char *filename) {
+    Card* head = linkedv(filename);
+    if (head == NULL) {
+        printf("The list is empty.\n");
+        return NULL;
+    }
+
+    Card* current = head;
+    Card* current2 = head;
+    Card* newpile = current;
+    Card* currentnewpile = current;
+    current = current->next;
+    newpile->next = NULL;
+    printf("length of the top pile %d \n", lengthoflist(current));
+    while (lengthoflist(current)>0) {
+        //printf("length of the top pile %d \n", lengthoflist(current));
+        int min = 0;
+        int max = lengthoflist(newpile);
+        int randomNumber = rand() % (max - min + 1) + min;
+        printf("random number %d \n", randomNumber);
+        current2 = current->next;
+        //insertCard(newpile, randomNumber, current);
+        if(randomNumber == 0){
+            current->next = newpile;
+            newpile = current;
+        } else{
+        currentnewpile = iteratelist(randomNumber-1, newpile);
+
+        current->next = currentnewpile->next;
+
+        currentnewpile->next = current;
+    }
+        current = current2;
+        //printf("length of the new pile %d \n", lengthoflist(newpile));
+        //printLinkedList(newpile);
+    }
+
+    return newpile;
+}
+
+Card* findCard(char*card, column columns[]) {
+
+    for(int t = 0;t < longestcolumn(columns) ;t++){
+        for(int i = 0;i < 7 ;i++){
+            Card* current = iteratelist(lengthoflist(columns[i].next)-t,columns[i].next);
+            //printf("%c%c  ", current->displayedChars[0], current->displayedChars[1]);
+            //printf("\n");
+            //printf("card1 %c card2 %c  ", card[0], card[1]);
+            if(current->displayedChars[0] == card[0] && current->displayedChars[1] == card[1]){
+                return current;
+            }
+        }
+
+    }
+    return NULL;
+}
+void writeLinkedListToFile(const char *filename, Card* head) {
+    // Open the file for writing
+    FILE *file = fopen(filename, "w+");
+    if (file == NULL) {
+        printf("Could not open file %s\n", filename);
+        return;
+    }
+
+    // Traverse the linked list and write each element's content to the file
+    Card* current = head;
+    while (current != NULL) {
+        fprintf(file, "%c%c\n", current->displayedChars[0], current->displayedChars[1]);
+        current = current->next;
+    }
+
+    // Close the file
+    fclose(file);
+}
+void copyFile(const char *sourcePath, const char *destinationPath) {
+    FILE *sourceFile, *destinationFile;
+    char ch;
+
+    // Open source file in read mode
+    sourceFile = fopen(sourcePath, "r");
+    if (sourceFile == NULL) {
+        printf("Error: Unable to open source file.\n");
+        return;
+    }
+
+    // Open destination file in write mode
+    destinationFile = fopen(destinationPath, "w+");
+    if (destinationFile == NULL) {
+        printf("Error: Unable to create destination file.\n");
+        fclose(sourceFile); // Close source file before returning
+        return;
+    }
+
+    // Copy contents from source file to destination file
+    while ((ch = fgetc(sourceFile)) != EOF) {
+        fputc(ch, destinationFile);
+    }
+
+    // Close files
+    fclose(sourceFile);
+    fclose(destinationFile);
+}
+
+
+
+void insertCard(Card* head, int position, Card* newCard) {
+    // If the position is less than 0, exit the function
+    if (position < 0) {
+        printf("Error: Invalid position for insertion.\n");
+        return;
+    }
+
+    // If the position is 0, insert the new card at the beginning of the list
+    if (position == 0) {
+        newCard->next = head;
+        return;
+    }
+
+    // Find the node at the position just before the insertion point
+    Card* current2 = head;
+    current2 = iteratelist(position-1, head);
+
+    // Insert the new card between the current node and the next node
+    newCard->next = current2->next;
+    current2->next = newCard;
+}
 
 /*
 void sdlExample () {
