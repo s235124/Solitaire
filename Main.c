@@ -24,6 +24,7 @@ typedef Card Foundation;
 
 // Subroutines in the program
 //void sdlExample();
+bool checkIfWon (column columns[]);
 void show (Card* head, column columns[], Foundation foundation[]);
 void startshow ();
 void load();
@@ -38,7 +39,7 @@ void createcolumns (Card* finalCard, column columns[]);
 Card* unappend(Card* head);
 int longestcolumn (column columns[]);
 void flipcard (column columns[]);
-void parseInput(const char* input, char* filename);
+bool parseInput(const char* input, char* filename, size_t size);
 Card* split(const char *filename, int split);
 void insertCard(Card* head, int position, Card* newCard);
 Card* randomShuffle(const char *filename);
@@ -55,10 +56,7 @@ void flipcard3 (column columns[]);
 
 int main(int argc, char* argv[]) {
     //sdlExample();
-    Card cards[52];
     Card *head = NULL;
-    char *relativePath = "../file.txt";
-    char absolutePath[1024];
 
     column columns[7];
     Foundation foundation[4];
@@ -66,12 +64,7 @@ int main(int argc, char* argv[]) {
     char card2[3];
 
     bool p = false;
-
-    if (realpath(relativePath, absolutePath) == NULL) {
-        return 1;
-    }
-
-    head = linkedv(absolutePath);
+    bool gameIsWon = false;
 
     startshow();
 
@@ -91,16 +84,19 @@ int main(int argc, char* argv[]) {
             flipcard(columns);
         }
         else if (!p && strstr(input, "LD") != NULL) {
-            parseInput(input, filename);
-            //printf("Filename: %s\n", filename);
-            head = linkedv(filename);
-            if (head != NULL) {
-                writeLinkedListToFile("currentd.txt", head);
+            if(!parseInput(input, filename, sizeof(filename)))
+                strcpy(message, "File not found!");
+            else {
+                //printf("Filename: %s\n", filename);
+                head = linkedv(filename);
+                if (head != NULL) {
+                    writeLinkedListToFile("currentd.txt", head);
 
-                createFoundation(foundation);
-                createcolumns(head, columns);
-            } else {
-                strcpy(message, "Failed to load file.");
+                    createFoundation(foundation);
+                    createcolumns(head, columns);
+                } else {
+                    strcpy(message, "Failed to load file.");
+                }
             }
         }
         else if (!p && strstr(input, "SI") != NULL) {
@@ -124,7 +120,7 @@ int main(int argc, char* argv[]) {
             flipcard(columns);
         }
         else if (strstr(input, "SD") != NULL) {
-            parseInput(input , filename);
+            parseInput(input , filename, sizeof(filename));
             copyFile("currentd.txt",filename);
         }
         else if (p && strstr(input, "->") != NULL) {
@@ -146,6 +142,7 @@ int main(int argc, char* argv[]) {
         }
         else if (!p && strstr(input, "P") != NULL) {
             p = true;
+            gameIsWon = false;
             head = linkedv("currentd.txt");
             createcolumns2(head, columns);
             flipcard2(columns);
@@ -167,6 +164,8 @@ int main(int argc, char* argv[]) {
 
         if (p) while(toFoundation(columns, foundation));
 
+        if (checkIfWon(columns))
+            strcpy(message, "Game is won!");
 
         show(head, columns, foundation);
         printf("LAST COMMAND: %s", prevInput);
@@ -176,6 +175,16 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
+bool checkIfWon (column columns[]) {
+    int counter = 0;
+    for (int i = 0; i < lengthoflist(columns); i++) {
+        if (columns[i].next == &columns[i])
+            counter++;
+    }
+    if (counter >= 4)
+        return true;
+    return false;
+}
 
 void printFileLines(const char *filename, Card* cards) {
     FILE *file = fopen(filename, "r");
@@ -247,12 +256,12 @@ Card* linkedv(const char *filename){
                 recentCard->number = line[0] - '0';
                 break;
         }
-        printf("%d\n", recentCard->number);
+        //printf("%d\n", recentCard->number);
         recentCard->displayedChars[0] = line[0];
         recentCard->displayedChars[1] = line[1];
         recentCard->facingDown = true;
         recentCard->isColumn = false;
-        recentCard->next = NULL; //
+        recentCard->next = NULL;
 
         if (head == NULL) {
             // If the list is empty, set the new card as the head
@@ -359,16 +368,20 @@ bool toFoundation (column columns[], Foundation foundation[]) {
                 }
             }
         }
+        else {
+            for (int j = 0; j < 4; j++) {
+                if (foundation[j].suit == current->displayedChars[1] &&
+                    current->number - 1 == foundation[j].next->number
+                    && foundation[j].next != &foundation[j]) {
+                    columns[i].next = current->next;
+                    current->next = foundation[j].next;
+                    foundation[j].next = current;
 
-        for (int j = 0; j < 4; j++) {
-            if (foundation[j].suit == current->displayedChars[1] && current->number - 1 == foundation[j].next->number) {
-                current->next = foundation[j].next;
-                foundation[j].next = current;
+                    if (columns[i].next == foundation[j].next)
+                        columns[i].next = &columns[i];
 
-                if (columns[i].next == foundation[j].next)
-                    columns[i].next = &columns[i];
-
-                return true;
+                    return true;
+                }
             }
         }
     }
@@ -383,7 +396,7 @@ void createcolumns (Card* finalCard, column columns[]) {
         columns[i].displayedChars[1] = i + '1';
         columns[i].isColumn = true;
         columns[i].next = &columns[i];
-        printf("%c\n", columns[i].displayedChars[1]);
+        //printf("%c\n", columns[i].displayedChars[1]);
     }
     int totalcards = lengthoflist(finalCard);
     //printf("%d", totalcards);
@@ -406,7 +419,7 @@ void createcolumns (Card* finalCard, column columns[]) {
 
             current->next = columns[i].next;//assign current cards pointer to column i
             current->column = i;
-            printf("%c%c is in column %d\n", current->displayedChars[0],current->displayedChars[1], current->column);
+            //printf("%c%c is in column %d\n", current->displayedChars[0],current->displayedChars[1], current->column);
             columns[i].next = current;//assign column i's pointer to current, such that column i points to the end of the head of the list
             //printf("columns %d %c  %c\n",i, columns[i].next-> displayedChars[0], columns[i].next->displayedChars[1]);
             assignedcards++;
@@ -442,11 +455,11 @@ void createFoundation (Foundation foundation[]) {
 void createcolumns2 (Card* finalCard, column columns[]) {
     //for loop for creating the 7 columns
     for(int i = 0; i<7; i++){
-
         columns[i].number = i+1;
         columns[i].isColumn = true;
         columns[i].next = &columns[i];
     }
+
     int totalcards = lengthoflist(finalCard);
     //printf("%d", totalcards);
     int assignedcards = 0;
@@ -610,10 +623,10 @@ bool move(Card* from, Card* to, column columns[]){
         return false;
     }
 
-    if (from->isColumn)
+    if (from->isColumn || from->column == to->column)
         return false;
 
-    if ((from->number != to->number - 1 && !to->isColumn) || from->displayedChars[1] == to->displayedChars[1])
+    if ((from->number != to->number - 1 && !to->isColumn) || from->displayedChars[1] == to->displayedChars[1] || (to->isColumn && from->displayedChars[0] != 'K'))
         return false;
 
     Card* fromColumn = findColumn(lengthoflist(from),from);
@@ -664,19 +677,26 @@ void startshow () {
     printf("\n");
 }
 
-void parseInput(const char* input, char* filename) {
+bool parseInput(const char* input, char* filename, size_t size) {
     // Find the position of '<' and '>'
     const char* start = strchr(input, '<');
     const char* end = strchr(input, '>');
 
-    // Copy the filename between '<' and '>'
-    if (start != NULL && end != NULL && end > start) {
-        strncpy(filename, start + 1, end - start - 1);
-        filename[end - start - 1] = '\0'; // Null-terminate the string
+    // Check if '<' and '>' are found in the input
+    if (start == NULL || end == NULL || *start != '<' || *end != '>') {
+        strncpy(filename, "../file.txt", size - 1);
+        filename[size - 1] = '\0';
+    } else if (start != NULL && end != NULL && end > start + 1) {
+        // Copy the filename between '<' and '>'
+        size_t length = end - start < size ? end - start - 1 : size - 1;
+        strncpy(filename, start + 1, length);
+        filename[length] = '\0'; // Null-terminate the string
     } else {
-        // No filename found
+        // No filename found or brackets are empty
         filename[0] = '\0';
+        return false;
     }
+    return true;
 }
 
 void parseInput2(const char* input, char* card1, char* card2) {
