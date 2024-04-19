@@ -21,6 +21,7 @@ typedef struct CardStruct {
 typedef Card column;
 typedef Card Foundation;
 
+bool movedFromFoundation;
 
 // Subroutines in the program
 //void sdlExample();
@@ -49,7 +50,7 @@ void createFoundation (Foundation foundation[]);
 void createcolumns2 (Card* finalCard, column columns[]);
 void flipcard2 (column columns[]);
 bool move(Card* from, Card* to, column columns[]);
-Card* findCard(char*card, column columns[]);
+Card *findCard(char *card, column columns[], Foundation foundation[]);
 void parseInput2(const char* input, char* card1, char* card2);
 Card* findColumn(int iteration, Card* head);
 void flipcard3 (column columns[]);
@@ -126,8 +127,8 @@ int main(int argc, char* argv[]) {
         else if (p && strstr(input, "->") != NULL) {
             parseInput2(input, card1, card2);
             //printf(" first char of card1 %c second char of card1 %c  ", card1[0], card1[1]);
-            Card* cardc2 = findCard(card2, columns);
-            Card* cardc1 = findCard(card1, columns);
+            Card* cardc1 = findCard(card1, columns, foundation);
+            Card* cardc2 = findCard(card2, columns, foundation);
 
             if(!move(cardc2, cardc1, columns))
                 strcpy(message, "Invalid move!");
@@ -145,13 +146,14 @@ int main(int argc, char* argv[]) {
             gameIsWon = false;
             head = linkedv("currentd.txt");
             createcolumns2(head, columns);
+            createFoundation(foundation);
             flipcard2(columns);
         }
         else if (p && strstr(input, "->") != NULL) {
             parseInput2(input, card1, card2);
             //printf(" first char of card1 %c second char of card1 %c  ", card1[0], card1[1]);
-            Card* cardc2 = findCard(card2, columns);
-            Card* cardc1 = findCard(card1, columns);
+            Card* cardc1 = findCard(card1, columns, foundation);
+            Card* cardc2 = findCard(card2, columns, foundation);
 
             if(!move(cardc2, cardc1, columns))
                 strcpy(message, "Invalid move!");
@@ -162,7 +164,8 @@ int main(int argc, char* argv[]) {
             strcpy(message, "Invalid Command!");
         }
 
-        if (p) while(toFoundation(columns, foundation));
+        printf("%d", movedFromFoundation);
+        if (p && !movedFromFoundation) while(toFoundation(columns, foundation));
 
         if (checkIfWon(columns))
             strcpy(message, "Game is won!");
@@ -176,14 +179,11 @@ int main(int argc, char* argv[]) {
 }
 
 bool checkIfWon (column columns[]) {
-    int counter = 0;
-    for (int i = 0; i < lengthoflist(columns); i++) {
-        if (columns[i].next == &columns[i])
-            counter++;
+    for (int i = 0; i < 7; i++) {
+        if (lengthoflist(columns[i].next) > 1)
+            return false;
     }
-    if (counter >= 4)
-        return true;
-    return false;
+    return true;
 }
 
 void printFileLines(const char *filename, Card* cards) {
@@ -363,6 +363,8 @@ bool toFoundation (column columns[], Foundation foundation[]) {
 
                     if (columns[i].next == foundation[j].next)
                         columns[i].next = &columns[i];
+
+
 
                     return true;
                 }
@@ -618,21 +620,27 @@ void flipcard3 (column columns[]) {
 }
 
 bool move(Card* from, Card* to, column columns[]){
+    printf("initiate move card %c%c in column \n", from->displayedChars[0], from->displayedChars[1]);
+
     if(from == NULL || to == NULL){
         printf("Cards doesnt exist");
         return false;
     }
 
-    if (from->isColumn || from->column == to->column)
-        return false;
-
-    if ((from->number != to->number - 1 && !to->isColumn) || from->displayedChars[1] == to->displayedChars[1] || (to->isColumn && from->displayedChars[0] != 'K'))
-        return false;
-
     Card* fromColumn = findColumn(lengthoflist(from),from);
     Card* toColumn = findColumn(lengthoflist(to),to);
 
-    printf("initiate move card %c%c in column %d \n", from->displayedChars[0], from->displayedChars[1], fromColumn->column);
+    if (from->isColumn || fromColumn == toColumn) {
+        printf("Cards doesnt exist2");
+        return false;
+    }
+
+    if ((from->number != to->number - 1 && !to->isColumn) || from->displayedChars[1] == to->displayedChars[1] || (to->isColumn && from->displayedChars[0] != 'K')) {
+        printf("Cards doesnt exist 3");
+        return false;
+    }
+
+
 
     Card* lastCardinFrom = fromColumn->next;
     printf("the last card in this column is %c%c ", lastCardinFrom->displayedChars[0], lastCardinFrom->displayedChars[1]);
@@ -830,8 +838,13 @@ Card* randomShuffle(const char *filename) {
     return newpile;
 }
 
-Card* findCard(char*card, column columns[]) {
-
+Card *findCard(char *card, column columns[], Foundation foundation[]) {
+    for (int i = 0; i < 4; i++) {
+        if (foundation[i].next->displayedChars[0] == card[0] && foundation[i].next->displayedChars[1] == card[1]) {
+            movedFromFoundation = true;
+            return foundation[i].next;
+        }
+    }
     for(int t = 0;t < longestcolumn(columns) ;t++){
         for(int i = 0;i < 7 ;i++){
             Card* current = iteratelist(lengthoflist(columns[i].next)-t,columns[i].next);
@@ -839,11 +852,12 @@ Card* findCard(char*card, column columns[]) {
             //printf("\n");
             //printf("card1 %c card2 %c  ", card[0], card[1]);
             if(current->displayedChars[0] == card[0] && current->displayedChars[1] == card[1]){
+                movedFromFoundation = false;
                 return current;
             }
         }
-
     }
+    movedFromFoundation = false;
     return NULL;
 }
 void writeLinkedListToFile(const char *filename, Card* head) {
