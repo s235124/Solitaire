@@ -1,12 +1,17 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
-//#include <SDL.h>
-//#include <ddraw.h>
-//#include <SDL_image.h>
+#include <SDL.h>
+#include <SDL_ttf.h>
+#include <ddraw.h>
+#include <SDL_image.h>
 #include <string.h>
 
 #define realpath(N,R) _fullpath((R),(N),_MAX_PATH)
+#define WINDOW_WIDTH 1920
+#define WINDOW_HEIGHT 1080
+#define GRID_SIZE 10
+#define PADDING 10
 
 typedef struct CardStruct {
     int number;
@@ -22,10 +27,8 @@ typedef struct CardStruct {
 typedef Card column;
 typedef Card Foundation;
 
-bool movedFromFoundation;
-
 // Subroutines in the program
-//void sdlExample();
+void sdlExample(column columns[]);
 bool checkIfWon (column columns[]);
 void show (Card* head, column columns[], Foundation foundation[]);
 void startshow ();
@@ -57,10 +60,14 @@ Card* findColumn(int iteration, Card* head);
 void flipcard3 (column columns[]);
 
 int main(int argc, char* argv[]) {
-    //sdlExample();
     Card *head = NULL;
 
     column columns[7];
+    head = linkedv("../file.txt");
+    createcolumns(head, columns);
+
+    sdlExample(columns);
+
     Foundation foundation[4];
     char card1[3];
     char card2[3];
@@ -167,7 +174,6 @@ int main(int argc, char* argv[]) {
         else {
             strcpy(message, "Invalid Command!");
         }
-
         if (p) while(toFoundation(columns, foundation));
 
         if (checkIfWon(columns))
@@ -936,62 +942,105 @@ void insertCard(Card* head, int position, Card* newCard) {
     current2->next = newCard;
 }
 
-/*
-void sdlExample () {
-    // Initialize SDL
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
-        SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
-        return;
-    }
 
-    if (IMG_Init(IMG_INIT_PNG) == 0) {
-        SDL_Log("Unable to initialize SDL image: %s", SDL_GetError());
-        return;
-    }
+void sdlExample (column columns[]) {
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+    TTF_Init();
 
-    // Create a window
-    SDL_Window *window = SDL_CreateWindow("Game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 512, 512, SDL_WINDOW_SHOWN);
-    if (!window) {
-        SDL_Log("Failed to create window: %s", SDL_GetError());
-        return;
-    }
-
+    SDL_Window* window = SDL_CreateWindow("Grid Layout", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    if (renderer == NULL) {
-        SDL_Log("Error renderer creation: %s", SDL_GetError());
-        return;
+
+    TTF_Font* font = TTF_OpenFont("../arial.ttf", 24);
+    if (!font)
+        printf("nope");
+
+
+    SDL_Color color = {255, 255, 255, 255};
+
+    SDL_Rect grid[GRID_SIZE][GRID_SIZE];
+    int cell_width = (800 - PADDING * (GRID_SIZE + 1)) / GRID_SIZE - 15;
+    int cell_height = (600 - PADDING * (GRID_SIZE + 1)) / GRID_SIZE + 30;
+
+    int total_width = GRID_SIZE * (cell_width + PADDING) - PADDING;
+    int start_x = (WINDOW_WIDTH - total_width) / 2;
+
+    SDL_SetRenderDrawColor(renderer, 100, 200, 100, 255);
+    SDL_RenderClear(renderer);
+
+    Card lastcurrent[8];
+    flipcard(columns);
+
+    for (int i = 1; i < longestcolumn(columns); ++i) {
+        for (int j = 0; j < 7; ++j) {
+            Card* current = iteratelist(lengthoflist(columns[j].next)-i,columns[j].next);
+
+            grid[i][j].x = start_x + j * (cell_width + PADDING);
+            grid[i][j].y = PADDING + i * (cell_height + PADDING);
+            grid[i][j].w = cell_width;
+            grid[i][j].h = cell_height;
+
+            char text[8];
+
+            if(current != NULL ){
+                if (current->displayedChars[0] == 'C')
+                    sprintf(text, "    ");
+                else if(!(lastcurrent[j].displayedChars[0] == current->displayedChars[0] && lastcurrent[j].displayedChars[1] == current->displayedChars[1])){
+                    if(!current->facingDown){
+                        sprintf(text, "%c%c  ", current->displayedChars[0], current->displayedChars[1]);
+                    }else{
+                        sprintf(text, "[]  ");
+                    }
+
+                } else{
+                    sprintf(text, "    ");
+                }
+
+                lastcurrent[j].displayedChars[0] = current->displayedChars[0];
+                lastcurrent[j].displayedChars[1] = current->displayedChars[1];
+            }
+
+            SDL_Surface* surface = TTF_RenderText_Solid(font, text, color);
+            SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+            if (!surface)
+                printf("nope2");
+            if (!texture)
+                printf("nope3");
+
+            SDL_Rect dest;
+            dest.x = grid[i][j].x + (cell_width * 0.2);
+            dest.y = grid[i][j].y + (cell_height * 0.1);
+            SDL_QueryTexture(texture, NULL, NULL, &dest.w, &dest.h);
+
+            SDL_RenderCopy(renderer, texture, NULL, &dest);
+
+            SDL_FreeSurface(surface);
+            SDL_DestroyTexture(texture);
+        }
     }
 
-    SDL_Surface* lettuce_sur = IMG_Load("/Users/mohammedismail/CLionProjects/Solitaire/BarackOsama.png");
-    if (lettuce_sur == NULL) {
-        SDL_Log("Error loading image: ", IMG_GetError());
-        return;
-    }
-
-    SDL_Texture* lettuce_tex = SDL_CreateTextureFromSurface(renderer, lettuce_sur);
-    if (lettuce_tex == NULL) {
-        SDL_Log("Error creating texture");
-        return;
-    }
-
-    SDL_FreeSurface(lettuce_sur);
-
-    while (true) {
-        SDL_Event e;
-        if (SDL_WaitEvent(&e)) {
-            if (e.type == SDL_QUIT) {
-                break;
+    SDL_Event event;
+    int running = 1;
+    while (running) {
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                running = 0;
             }
         }
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, lettuce_tex, NULL, NULL);
+
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        for (int i = 0; i < GRID_SIZE; ++i) {
+            for (int j = 0; j < GRID_SIZE; ++j) {
+                SDL_RenderDrawRect(renderer, &grid[i][j]);
+            }
+        }
+
         SDL_RenderPresent(renderer);
     }
 
-    // Cleanup
-    SDL_DestroyTexture(lettuce_tex);
+    TTF_CloseFont(font);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
-    IMG_Quit();
+    TTF_Quit();
     SDL_Quit();
-}*/
+}
