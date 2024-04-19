@@ -16,6 +16,7 @@ typedef struct CardStruct {
     char displayedChars[2];
     struct CardStruct* next;
     bool facingDown;
+    bool movedFromFoundation;
 } Card;
 
 typedef Card column;
@@ -65,7 +66,6 @@ int main(int argc, char* argv[]) {
     char card2[3];
 
     bool p = false;
-    bool gameIsWon = false;
 
     startshow();
 
@@ -126,14 +126,19 @@ int main(int argc, char* argv[]) {
         }
         else if (p && strstr(input, "->") != NULL) {
             parseInput2(input, card1, card2);
-            //printf(" first char of card1 %c second char of card1 %c  ", card1[0], card1[1]);
+
             Card* cardc1 = findCard(card1, columns, foundation);
             Card* cardc2 = findCard(card2, columns, foundation);
 
-            if(!move(cardc2, cardc1, columns))
-                strcpy(message, "Invalid move!");
-            flipcard3(columns);
-            printf(" card %c  %c  has moved ", card2[0], card2[1]);
+            if (card1[0] == 'F') {
+                cardc2->movedFromFoundation = false;
+            }
+            else {
+                if (!move(cardc2, cardc1, columns))
+                    strcpy(message, "Invalid move!");
+                flipcard3(columns);
+                printf(" card %c  %c  has moved ", card2[0], card2[1]);
+            }
         }
         else if (strstr(input, "QQ") != NULL) {
             break;
@@ -143,7 +148,6 @@ int main(int argc, char* argv[]) {
         }
         else if (!p && strstr(input, "P") != NULL) {
             p = true;
-            gameIsWon = false;
             head = linkedv("currentd.txt");
             createcolumns2(head, columns);
             createFoundation(foundation);
@@ -164,8 +168,7 @@ int main(int argc, char* argv[]) {
             strcpy(message, "Invalid Command!");
         }
 
-        printf("%d", movedFromFoundation);
-        if (p && !movedFromFoundation) while(toFoundation(columns, foundation));
+        if (p) while(toFoundation(columns, foundation));
 
         if (checkIfWon(columns))
             strcpy(message, "Game is won!");
@@ -354,6 +357,10 @@ bool toFoundation (column columns[], Foundation foundation[]) {
     for (int i = 0; i < 7; i++) {
         Card *current = columns[i].next;
 
+        if (current->movedFromFoundation) {
+            continue;
+        }
+
         if (current->number == 1) {
             columns[i].next = current->next;
             for (int j = 0; j < 4; j++) {
@@ -363,8 +370,6 @@ bool toFoundation (column columns[], Foundation foundation[]) {
 
                     if (columns[i].next == foundation[j].next)
                         columns[i].next = &columns[i];
-
-
 
                     return true;
                 }
@@ -839,9 +844,10 @@ Card* randomShuffle(const char *filename) {
 }
 
 Card *findCard(char *card, column columns[], Foundation foundation[]) {
+    // Moving from foundation
     for (int i = 0; i < 4; i++) {
         if (foundation[i].next->displayedChars[0] == card[0] && foundation[i].next->displayedChars[1] == card[1]) {
-            movedFromFoundation = true;
+            foundation[i].next->movedFromFoundation = true;
             return foundation[i].next;
         }
     }
@@ -852,12 +858,11 @@ Card *findCard(char *card, column columns[], Foundation foundation[]) {
             //printf("\n");
             //printf("card1 %c card2 %c  ", card[0], card[1]);
             if(current->displayedChars[0] == card[0] && current->displayedChars[1] == card[1]){
-                movedFromFoundation = false;
+                current->movedFromFoundation = false;
                 return current;
             }
         }
     }
-    movedFromFoundation = false;
     return NULL;
 }
 void writeLinkedListToFile(const char *filename, Card* head) {
