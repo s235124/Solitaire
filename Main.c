@@ -8,10 +8,10 @@
 #include <string.h>
 
 #define realpath(N,R) _fullpath((R),(N),_MAX_PATH)
-#define WINDOW_WIDTH 1920
-#define WINDOW_HEIGHT 1080
+#define WINDOW_WIDTH 900
+#define WINDOW_HEIGHT 900
 #define GRID_SIZE 10
-#define PADDING 10
+#define PADDING 0
 
 typedef struct CardStruct {
     int number;
@@ -24,11 +24,17 @@ typedef struct CardStruct {
     bool movedFromFoundation;
 } Card;
 
+typedef struct {
+    SDL_Rect rect;
+    bool hovered;
+    bool clicked;
+} Button;
+
 typedef Card column;
 typedef Card Foundation;
 
 // Subroutines in the program
-void sdlExample(column columns[]);
+void sdlExample(column columns[], Card* head, Foundation foundation[]);
 bool checkIfWon (column columns[]);
 void show (Card* head, column columns[], Foundation foundation[]);
 void startshow ();
@@ -63,12 +69,12 @@ int main(int argc, char* argv[]) {
     Card *head = NULL;
 
     column columns[7];
-    head = linkedv("../file.txt");
-    createcolumns(head, columns);
-
-    sdlExample(columns);
+    head = linkedv("file.txt");
+    createcolumns2(head, columns);
 
     Foundation foundation[4];
+    sdlExample(columns, head, foundation);
+
     char card1[3];
     char card2[3];
 
@@ -283,6 +289,8 @@ Card* linkedv(const char *filename){
             }
             current->next = recentCard;
         }
+        printf("card number: %d\n", recentCard->number);
+        fflush(stdout);
     }
 
     fclose(file);
@@ -631,8 +639,6 @@ void flipcard3 (column columns[]) {
 }
 
 bool move(Card* from, Card* to, column columns[]){
-    printf("initiate move card %c%c in column \n", from->displayedChars[0], from->displayedChars[1]);
-
     if(from == NULL || to == NULL){
         printf("Cards doesnt exist");
         return false;
@@ -942,36 +948,19 @@ void insertCard(Card* head, int position, Card* newCard) {
     current2->next = newCard;
 }
 
+void sdlCreateColumns (column columns[], SDL_Renderer* renderer, TTF_Font* font, SDL_Rect grid[][7]) {
+    Card lastcurrent[8];
 
-void sdlExample (column columns[]) {
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
-    TTF_Init();
-
-    SDL_Window* window = SDL_CreateWindow("Grid Layout", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-
-    TTF_Font* font = TTF_OpenFont("../arial.ttf", 24);
-    if (!font)
-        printf("nope");
-
-
-    SDL_Color color = {255, 255, 255, 255};
-
-    SDL_Rect grid[GRID_SIZE][GRID_SIZE];
-    int cell_width = (800 - PADDING * (GRID_SIZE + 1)) / GRID_SIZE - 15;
-    int cell_height = (600 - PADDING * (GRID_SIZE + 1)) / GRID_SIZE + 30;
+    int cell_width = (800 - PADDING * (GRID_SIZE + 1)) / GRID_SIZE - 5;
+    int cell_height = (600 - PADDING * (GRID_SIZE + 1)) / GRID_SIZE + 10;
 
     int total_width = GRID_SIZE * (cell_width + PADDING) - PADDING;
     int start_x = (WINDOW_WIDTH - total_width) / 2;
 
-    SDL_SetRenderDrawColor(renderer, 100, 200, 100, 255);
-    SDL_RenderClear(renderer);
 
-    Card lastcurrent[8];
-    flipcard(columns);
-
-    for (int i = 1; i < longestcolumn(columns); ++i) {
+    for (int i = 0; i < longestcolumn(columns); ++i) {
         for (int j = 0; j < 7; ++j) {
+            SDL_Color color = {255, 255, 255, 255};
             Card* current = iteratelist(lengthoflist(columns[j].next)-i,columns[j].next);
 
             grid[i][j].x = start_x + j * (cell_width + PADDING);
@@ -982,13 +971,20 @@ void sdlExample (column columns[]) {
             char text[8];
 
             if(current != NULL ){
-                if (current->displayedChars[0] == 'C')
-                    sprintf(text, "    ");
+                if (i == 0) {
+                    color.a = 255;
+                    color.r = 20;
+                    color.g = 20;
+                    color.b = 255;
+                    sprintf(text, "C%d   ", j + 1);
+                }
+                else if (current->displayedChars[0] == 'C')
+                    sprintf(text, "C%d  ", current->displayedChars[1]);
                 else if(!(lastcurrent[j].displayedChars[0] == current->displayedChars[0] && lastcurrent[j].displayedChars[1] == current->displayedChars[1])){
                     if(!current->facingDown){
                         sprintf(text, "%c%c  ", current->displayedChars[0], current->displayedChars[1]);
                     }else{
-                        sprintf(text, "[]  ");
+                        sprintf(text, "--  ");
                     }
 
                 } else{
@@ -998,6 +994,8 @@ void sdlExample (column columns[]) {
                 lastcurrent[j].displayedChars[0] = current->displayedChars[0];
                 lastcurrent[j].displayedChars[1] = current->displayedChars[1];
             }
+            else
+                continue;
 
             SDL_Surface* surface = TTF_RenderText_Solid(font, text, color);
             SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
@@ -1018,21 +1016,241 @@ void sdlExample (column columns[]) {
             SDL_DestroyTexture(texture);
         }
     }
+}
+
+bool handleButtonEvent(Button* button, SDL_Event* event) {
+    if (event->type == SDL_MOUSEMOTION) {
+        // Check if the mouse is over the button
+        int mouseX = event->motion.x;
+        int mouseY = event->motion.y;
+        button->hovered = (mouseX >= button->rect.x && mouseX <= (button->rect.x + button->rect.w) &&
+                           mouseY >= button->rect.y && mouseY <= (button->rect.y + button->rect.h));
+        return 0;
+    } else if (event->type == SDL_MOUSEBUTTONDOWN && button->hovered) {
+        // The button was clicked
+        button->clicked = 1;
+        return 1;
+    }
+}
+
+// Function to render the button
+void renderButton(Button* button, SDL_Renderer* renderer) {
+    // Change the button color based on its state
+    if (button->clicked) {
+        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green if clicked
+    } else if (button->hovered) {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Yellow if hovered
+    } else {
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red otherwise
+    }
+
+    // Render the button
+    SDL_RenderFillRect(renderer, &(button->rect));
+}
+
+void sdlShow (SDL_Renderer* renderer, column columns[], SDL_Rect grid[][7], TTF_Font* font) {
+    SDL_SetRenderDrawColor(renderer, 100, 200, 100, 255);
+    SDL_RenderClear(renderer);
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    sdlCreateColumns(columns, renderer, font, grid);
+
+    for (int i = 0; i < longestcolumn(columns); ++i) {
+        for (int j = 0; j < 7; ++j) {
+            SDL_RenderDrawRect(renderer, &grid[i][j]);
+        }
+    }
+}
+
+Button createButton (int y) {
+    Button load;
+    load.rect.x = WINDOW_WIDTH - 100;
+    load.rect.y = y;
+    load.rect.h = 50;
+    load.rect.w = 100;
+    load.hovered = false;
+    load.clicked = false;
+    return load;
+}
+
+//void render_textbox(SDL_Renderer* renderer, TTF_Font* font) {
+//    SDL_Color color = {255, 255, 255, 255};
+//    SDL_Rect rect;
+//
+//    rect.w = rect.h = 10;
+//
+//    SDL_Surface* surface = TTF_RenderText_Solid(font, "text", color);
+//    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+//    SDL_QueryTexture(texture, NULL, NULL, &rect.w, &rect.h);
+//    SDL_RenderCopy(renderer, texture, NULL, &rect);
+//    SDL_FreeSurface(surface);
+//    SDL_DestroyTexture(texture);
+//}
+
+void buttonText (char* text, TTF_Font* font, SDL_Renderer* renderer, Button load) {
+    SDL_Color color = {0,0,0,255};
+    SDL_Surface* surface = TTF_RenderText_Solid(font, text, color);
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+    if (!surface)
+        printf("nope2");
+    if (!texture)
+        printf("nope3");
+
+    SDL_Rect dest;
+    dest.x = load.rect.x + (load.rect.w / 4);
+    dest.y = load.rect.y + (load.rect.h / 4);
+    SDL_QueryTexture(texture, NULL, NULL, &dest.w, &dest.h);
+
+    SDL_RenderCopy(renderer, texture, NULL, &dest);
+
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
+}
+
+bool canYouEvenClick (column columns[], int x, int y) {
+    if (x == 0 || y == 0)
+        return false;
+    if (y >= longestcolumn(columns) || x >7)
+        return false;
+    return true;
+}
+
+void sdlExample (column columns[], Card* head, Foundation foundation[]) {
+    bool p = false;
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+    TTF_Init();
+
+    SDL_Window* window = SDL_CreateWindow("Grid Layout", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+    TTF_Font* font = TTF_OpenFont("../arial.ttf", 18);
+    if (!font)
+        printf("nope");
+
+    SDL_Rect grid[longestcolumn(columns) + 1][7];
+
+    SDL_SetRenderDrawColor(renderer, 100, 200, 100, 255);
+    SDL_RenderClear(renderer);
+
+    flipcard2(columns);
+
+    sdlCreateColumns(columns, renderer, font, grid);
 
     SDL_Event event;
     int running = 1;
+
+    int cell_width = (800 - PADDING * (GRID_SIZE + 1)) / GRID_SIZE - 5;
+    int cell_height = (600 - PADDING * (GRID_SIZE + 1)) / GRID_SIZE + 10;
+
+    Button load = createButton(20);
+    Button flip = createButton(100);
+    Button shuffle = createButton(180);
+    Button initiate = createButton(260);
+
     while (running) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = 0;
             }
+            else if (event.type == SDL_MOUSEBUTTONDOWN) {
+                int x, y;
+                SDL_GetMouseState(&x, &y);
+
+                if (handleButtonEvent(&load, &event) ||
+                    handleButtonEvent(&flip, &event) ||
+                    handleButtonEvent(&shuffle, &event) ||
+                    handleButtonEvent(&initiate, &event)) continue;
+
+                int gridX = x / cell_width;
+                int gridY = y / cell_height;
+
+                Card* current;
+
+                if (canYouEvenClick(columns, gridX, gridY)) {
+                    current = iteratelist(lengthoflist(columns[x - 1].next) - y, columns->next);
+                    printf("%c%c  ", current->displayedChars[0], current->displayedChars[1]);
+                }
+
+                printf("Clicked on cell (%d, %d)\n", gridX, gridY);
+                fflush(stdout);
+            }
+            else {
+                handleButtonEvent(&load, &event);
+                handleButtonEvent(&flip, &event);
+                handleButtonEvent(&shuffle, &event);
+                handleButtonEvent(&initiate, &event);
+            }
         }
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        for (int i = 0; i < GRID_SIZE; ++i) {
-            for (int j = 0; j < GRID_SIZE; ++j) {
+        for (int i = 0; i < longestcolumn(columns); ++i) {
+            for (int j = 0; j < 7; ++j) {
                 SDL_RenderDrawRect(renderer, &grid[i][j]);
             }
+        }
+
+        renderButton(&load, renderer);
+        buttonText("Load", font, renderer, load);
+        renderButton(&flip, renderer);
+        buttonText("Flip", font, renderer, flip);
+        renderButton(&shuffle, renderer);
+        buttonText("Shuffle", font, renderer, shuffle);
+        renderButton(&initiate, renderer);
+        buttonText("Play/Quit", font, renderer, initiate);
+
+
+        if (load.clicked) {
+            if (p) {
+                // Another functionality
+            }
+            else {
+                head = linkedv("file.txt");
+                createcolumns(head, columns);
+                sdlCreateColumns(columns, renderer, font, grid);
+                sdlShow(renderer, columns, grid, font);
+            }
+            load.clicked = false;
+        }
+        else if (flip.clicked) {
+            if (p) {
+                // Another functionality
+            }
+            else {
+                flipcard(columns);
+                sdlCreateColumns(columns, renderer, font, grid);
+                sdlShow(renderer, columns, grid, font);
+            }
+            flip.clicked = false;
+        }
+        else if(shuffle.clicked) {
+            if (p) {
+
+            }
+            else {
+                head = randomShuffle("currentd.txt");
+                writeLinkedListToFile("currentd.txt", head);
+                createcolumns(head, columns);
+                flipcard(columns);
+                sdlCreateColumns(columns, renderer, font, grid);
+                sdlShow(renderer, columns, grid, font);
+            }
+            shuffle.clicked = false;
+        }
+        else if (initiate.clicked) {
+            if (p) {
+                p = false;
+            }
+            else {
+                head = linkedv("currentd.txt");
+                createcolumns2(head, columns);
+                createFoundation(foundation);
+                flipcard2(columns);
+                sdlCreateColumns(columns, renderer, font, grid);
+                sdlShow(renderer, columns, grid, font);
+                p = true;
+            }
+            initiate.clicked = false;
         }
 
         SDL_RenderPresent(renderer);
