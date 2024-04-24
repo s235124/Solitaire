@@ -352,11 +352,16 @@ Card* findColumn(int iteration, Card* head){
     return current;
 
 }
-int lengthoflist(Card* head){
+int lengthoflist(Card* head) {
 
     int length = 0;
-    Card* current = head;
+    Card *current = head;
 
+    if (current == NULL) {
+        printf("its null");\
+        fflush(stdout);
+        return -1;
+    }
     while (current != NULL && !current->isColumn) {
         length++;
         current = current->next;
@@ -1165,15 +1170,13 @@ void sdlExample (column columns[], Card* head, Foundation foundation[]) {
                 int gridX = x / cell_width;
                 int gridY = y / cell_height;
 
-                Card* current;
 
                 if (canYouEvenClick(columns, gridX, gridY)) {
-                    current = iteratelist(lengthoflist(columns[x - 1].next) - y, columns->next);
-                    printf("%c%c  ", current->displayedChars[0], current->displayedChars[1]);
-                }
+                    printf("Clicked on cell (%d, %d)\n", gridX, gridY);
+                    fflush(stdout);
+                    Card* current = iteratelist(lengthoflist(columns[gridX - 1].next) - gridY, columns[gridX - 1].next);
 
-                printf("Clicked on cell (%d, %d)\n", gridX, gridY);
-                fflush(stdout);
+                }
             }
             else {
                 handleButtonEvent(&load, &event);
