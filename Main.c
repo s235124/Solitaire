@@ -320,7 +320,7 @@ bool isValidDeck(const char* filename) {
             }
         }
     }
-    //free(counts);
+    //free(counts);v
     return true;
 }
 Card* linkedv(const char *filename){
