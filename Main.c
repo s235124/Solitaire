@@ -67,6 +67,7 @@ void parseInput2(const char* input, char* card1, char* card2);
 Card* findColumn(int iteration, Card* head);
 void flipcard3 (column columns[]);
 bool checkFile (char* fileName);
+bool isValidDeck(const char* filename);
 int isLineInFile(char *filename, char *searchString);
 
 int main(int argc, char* argv[]) {
@@ -266,21 +267,62 @@ int isLineInFile(char *filename, char *searchString) {
     return 0;  // Did not find the line in the file
 }
 
-bool checkFile (char* fileName) {
-    FILE* file = fopen(fileName, "r");
-    char line[256];
+bool isValidDeck(const char* filename) {
+    int counts[4][13] = {0};
 
+    FILE* file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("Could not open v %s\n", filename);
+        return false;
+    }
+    int index = 0;
+    char line[256];
     while (fgets(line, sizeof(line), file)) {
-        int result = isLineInFile("file.txt", line);
-        if (result == 0)
+        // Increment the count for the corresponding card
+
+        index = line[1] - 'C';
+        if(line[1] == 'S'){
+            index = index - 13;
+        }else if(line[1] == 'H') {
+            index = index - 3;
+        }
+
+
+        if (line[0] >= '2' && line[0] <= '9') {
+            counts[index][line[0] - '1']++;
+        } else if (line[0] == 'T') {
+
+            printf("%d",index);
+
+            counts[index][9]++;
+        } else if (line[0] == 'J') {
+            counts[index][10]++;
+        } else if (line[0] == 'Q') {
+            counts[index][11]++;
+        } else if (line[0] == 'K') {
+            counts[index][12]++;
+        } else if (line[0] == 'A') {
+            counts[index][0]++;
+        } else {
+            // Invalid card
+            fclose(file);
             return false;
-        else if (result == 1)
-            return true;
+        }
     }
 
+    fclose(file);
+
+    // Check if each suit has 13 cards
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 13; j++) {
+            if (counts[i][j] != 1) {
+                return false;
+            }
+        }
+    }
+    //free(counts);
     return true;
 }
-
 Card* linkedv(const char *filename){
     Card* head = NULL;
     FILE *file = fopen(filename, "r");
