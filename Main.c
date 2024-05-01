@@ -66,7 +66,7 @@ Card *findCard(char *card, column columns[], Foundation foundation[]);
 void parseInput2(const char* input, char* card1, char* card2);
 Card* findColumn(int iteration, Card* head);
 void flipcard3 (column columns[]);
-bool checkFile (char* fileName);
+//bool checkFile (char* fileName);
 bool isValidDeck(const char* filename);
 int isLineInFile(char *filename, char *searchString);
 
@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
 
     column columns[7];
     head = linkedv("file.txt");
-    createcolumns2(head, columns);
+    createcolumns(head, columns);
 
     Foundation foundation[4];
     createFoundation(foundation);
@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
             if(!parseInput(input, filename, sizeof(filename)))
                 strcpy(message, "File not found!");
             else {
-                if (!checkFile(filename))
+                if (!isValidDeck(filename))
                     printf("u blaaady");
                 //printf("Filename: %s\n", filename);
                 head = linkedv(filename);
@@ -446,7 +446,7 @@ int lengthoflist(Card* head) {
     Card *current = head;
 
     if (current == NULL) {
-        printf("its null");\
+        printf("its null\n");
         fflush(stdout);
         return -1;
     }
@@ -1046,13 +1046,6 @@ void insertCard(Card* head, int position, Card* newCard) {
 void sdlCreateColumns (column columns[], Foundation foundation[], SDL_Renderer* renderer, TTF_Font* font, SDL_Rect grid[][7], SDL_Rect foundationGrid[][2]) {
     Card lastcurrent[8];
 
-    char card[] = " _____\n"
-                  "|9    |\n"
-                  "|^ ^ ^|\n"
-                  "|^ ^ ^|\n"
-                  "|^ ^ ^|\n"
-                  "|____6|\n";
-
     int cell_width = (800 - PADDING * (GRID_SIZE + 1)) / GRID_SIZE - 5;
     int cell_height = (400 - PADDING * (GRID_SIZE + 1)) / GRID_SIZE + 10;
 
@@ -1098,8 +1091,7 @@ void sdlCreateColumns (column columns[], Foundation foundation[], SDL_Renderer* 
 
                 lastcurrent[j].displayedChars[0] = current->displayedChars[0];
                 lastcurrent[j].displayedChars[1] = current->displayedChars[1];
-            } else
-                continue;
+            }
 
             SDL_Surface *surface = TTF_RenderText_Solid(font, text, color);
             SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
@@ -1223,20 +1215,6 @@ Button createButton (int y) {
     return load;
 }
 
-//void render_textbox(SDL_Renderer* renderer, TTF_Font* font) {
-//    SDL_Color color = {255, 255, 255, 255};
-//    SDL_Rect rect;
-//
-//    rect.w = rect.h = 10;
-//
-//    SDL_Surface* surface = TTF_RenderText_Solid(font, "text", color);
-//    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-//    SDL_QueryTexture(texture, NULL, NULL, &rect.w, &rect.h);
-//    SDL_RenderCopy(renderer, texture, NULL, &rect);
-//    SDL_FreeSurface(surface);
-//    SDL_DestroyTexture(texture);
-//}
-
 void buttonText (char* text, TTF_Font* font, SDL_Renderer* renderer, Button load) {
     SDL_Color color = {0,0,0,255};
     SDL_Surface* surface = TTF_RenderText_Solid(font, text, color);
@@ -1263,6 +1241,9 @@ bool canYouEvenClick (column columns[], int x, int y) {
         return false;
     if (y >= longestcolumn(columns) || x > 9)
         return false;
+    if (x < 7 && lengthoflist(columns[x - 1].next) > 0 && y > lengthoflist(columns[x - 1].next) ||
+        (lengthoflist(columns[x - 1].next) == 0 && y > lengthoflist(columns[x - 1].next) + 1))
+        return false;
     return true;
 }
 
@@ -1276,7 +1257,7 @@ void sdlExample (column columns[], Card* head, Foundation foundation[]) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
     TTF_Init();
 
-    SDL_Window* window = SDL_CreateWindow("Solitaire", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, 1200, SDL_WINDOW_SHOWN);
+    SDL_Window* window = SDL_CreateWindow("Solitaire", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, 1000, SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
     TTF_Font* font = TTF_OpenFont("arial.ttf", 18);
@@ -1288,8 +1269,6 @@ void sdlExample (column columns[], Card* head, Foundation foundation[]) {
 
     SDL_SetRenderDrawColor(renderer, 100, 200, 100, 255);
     SDL_RenderClear(renderer);
-
-    flipcard2(columns);
 
     sdlCreateColumns(columns, foundation, renderer, font, grid, foundationGrid);
 
@@ -1303,7 +1282,7 @@ void sdlExample (column columns[], Card* head, Foundation foundation[]) {
     Button flip = createButton(100);
     Button shuffle = createButton(180);
     Button split = createButton(260);
-    Button initiate = createButton(1100);
+    Button initiate = createButton(900);
 
     while (running) {
         while (SDL_PollEvent(&event)) {
@@ -1349,7 +1328,7 @@ void sdlExample (column columns[], Card* head, Foundation foundation[]) {
                             from->movedFromFoundation = false;
                         }
                         moveInitiated = false;
-                        while (toFoundation(columns, foundation));
+                        while (toFoundation(columns, foundation)) { SDL_Delay(500);}
                         flipcard3(columns);
 //                        printf(" card %c%c  has moved ", from->displayedChars[0], from->displayedChars[1]);
                         sdlShow(renderer, columns, foundation, grid, foundationGrid, font);
@@ -1380,9 +1359,11 @@ void sdlExample (column columns[], Card* head, Foundation foundation[]) {
             }
         }
 
-        renderButton(&load, renderer);
-        renderButton(&flip, renderer);
-        renderButton(&shuffle, renderer);
+        if (!p) {
+            renderButton(&load, renderer);
+            renderButton(&flip, renderer);
+            renderButton(&shuffle, renderer);
+        }
         renderButton(&initiate, renderer);
 
         if (!p) {
@@ -1392,9 +1373,9 @@ void sdlExample (column columns[], Card* head, Foundation foundation[]) {
             buttonText("Play", font, renderer, initiate);
         }
         else {
-            buttonText("text", font, renderer, load); // Other functionality text
-            buttonText("text", font, renderer, flip); // Other functionality text
-            buttonText("text", font, renderer, shuffle); // Other functionality text
+//            buttonText("text", font, renderer, load); // Other functionality text
+//            buttonText("text", font, renderer, flip); // Other functionality text
+//            buttonText("text", font, renderer, shuffle); // Other functionality text
             buttonText("Quit", font, renderer, initiate);
         }
 
@@ -1454,6 +1435,7 @@ void sdlExample (column columns[], Card* head, Foundation foundation[]) {
         SDL_RenderPresent(renderer);
 
         if (p && checkIfWon(columns)) {
+            SDL_Delay(1000);
             SDL_Window* winWindow = SDL_CreateWindow("Game won", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 300, 300, SDL_WINDOW_SHOWN);
             SDL_Renderer* winRenderer = SDL_CreateRenderer(winWindow, -1, SDL_RENDERER_ACCELERATED);
             SDL_Color color = {255,255,255,255};
