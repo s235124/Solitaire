@@ -7,13 +7,10 @@
 #include <SDL_image.h>
 #include <string.h>
 
-#define realpath(N,R) _fullpath((R),(N),_MAX_PATH)
 #define WINDOW_WIDTH 900
 #define WINDOW_HEIGHT 900
 #define GRID_SIZE 10
 #define PADDING 0
-#define MAX_LINE_LENGTH 100
-#define NUM_CARDS 52
 
 typedef struct CardStruct {
     int number;
@@ -40,8 +37,6 @@ void sdlExample(column columns[], Card* head, Foundation foundation[]);
 bool checkIfWon (column columns[]);
 void show (Card* head, column columns[], Foundation foundation[]);
 void startshow ();
-void load();
-void printFileLines(const char *filename, Card* cards);
 Card* linkedv(const char *filename);
 void printLinkedList(Card* head);
 Card* iteratelist(int iteration, Card* head);
@@ -49,12 +44,11 @@ bool isCardPointingToColumn(Card* card);
 int lengthoflist(Card* head);
 bool toFoundation (column columns[], Foundation foundation[]);
 void createcolumns (Card* finalCard, column columns[]);
-Card* unappend(Card* head);
 int longestcolumn (column columns[]);
 void flipcard (column columns[]);
 bool parseInput(const char* input, char* filename, size_t size);
+bool parseInputForSaving(const char* input, char* filename, size_t size);
 Card* split(const char *filename, int split);
-void insertCard(Card* head, int position, Card* newCard);
 Card* randomShuffle(const char *filename);
 void writeLinkedListToFile(const char *filename, Card* head);
 void copyFile(const char *sourcePath, const char *destinationPath);
@@ -66,9 +60,7 @@ Card *findCard(char *card, column columns[], Foundation foundation[]);
 void parseInput2(const char* input, char* card1, char* card2);
 Card* findColumn(int iteration, Card* head);
 void flipcard3 (column columns[]);
-//bool checkFile (char* fileName);
 bool isValidDeck(const char* filename);
-int isLineInFile(char *filename, char *searchString);
 
 int main(int argc, char* argv[]) {
     Card *head = NULL;
@@ -108,17 +100,20 @@ int main(int argc, char* argv[]) {
             if(!parseInput(input, filename, sizeof(filename)))
                 strcpy(message, "File not found!");
             else {
-                if (!isValidDeck(filename))
-                    printf("u blaaady");
-                //printf("Filename: %s\n", filename);
-                head = linkedv(filename);
-                if (head != NULL) {
-                    writeLinkedListToFile("currentd.txt", head);
+                if (!isValidDeck(filename)) {
+                    strcpy(message, "Not a valid deck of cards.");
+                }
+                else {
+                    //printf("Filename: %s\n", filename);
+                    head = linkedv(filename);
+                    if (head != NULL) {
+                        writeLinkedListToFile("currentd.txt", head);
 
-                    createFoundation(foundation);
-                    createcolumns(head, columns);
-                } else {
-                    strcpy(message, "Failed to load file.");
+                        createFoundation(foundation);
+                        createcolumns(head, columns);
+                    } else {
+                        strcpy(message, "Failed to load file.");
+                    }
                 }
             }
         }
@@ -131,8 +126,21 @@ int main(int argc, char* argv[]) {
                 } else {
                     strcpy(message, "Failed to split the file.");
                 }
-            } else {
+            }
+            else if (sscanf(input, "SI %d", &splitNumber) == 0) {
                 strcpy(message, "Invalid input format for SI.");
+            }
+            else {
+                int min = 2;
+                int max = 50;
+                splitNumber = rand() % (max - min + 1) + min;
+                printf("%d\n", splitNumber);
+                head = split("currentd.txt", splitNumber);
+                if (head != NULL) {
+                    createcolumns(head, columns);
+                } else {
+                    strcpy(message, "Failed to split the file.");
+                }
             }
         }
         else if (!p && strstr(input, "SR") != NULL) {
@@ -143,8 +151,9 @@ int main(int argc, char* argv[]) {
             flipcard(columns);
         }
         else if (strstr(input, "SD") != NULL) {
-            parseInput(input , filename, sizeof(filename));
+            parseInputForSaving(input , filename, sizeof(filename));
             copyFile("currentd.txt",filename);
+            fflush(stdout);
         }
         else if (p && strstr(input, "->") != NULL) {
             parseInput2(input, card1, card2);
@@ -191,7 +200,7 @@ int main(int argc, char* argv[]) {
         }
         if (p) while(toFoundation(columns, foundation));
 
-        if (checkIfWon(columns))
+        if (p && checkIfWon(columns))
             strcpy(message, "Game is won!");
 
         show(head, columns, foundation);
@@ -208,63 +217,6 @@ bool checkIfWon (column columns[]) {
             return false;
     }
     return true;
-}
-
-void printFileLines(const char *filename, Card* cards) {
-    FILE *file = fopen(filename, "r");
-    if (file == NULL) {
-        printf("Could not open file %s\n", filename);
-        return;
-    }
-
-    char line[256];
-    int i = 0;
-
-    while (fgets(line, sizeof(line), file)) {
-        if (i == 0) {
-            cards[i].displayedChars[0] = line[0];
-            cards[i].displayedChars[1] = line[1];
-
-            cards[i].next = 0;
-        }
-        else {
-            cards[i].displayedChars[0] = line[0];
-            cards[i].displayedChars[1] = line[1];
-
-            cards[i].next = &(cards[i-1]);
-            printf("%c  %c\n", cards[i].next -> displayedChars[0], cards[i].next ->displayedChars[1]);
-        }
-
-        printf("%c  %c\n", cards[i].displayedChars[0], cards[i].displayedChars[1]);
-
-        i++;
-    }
-
-    fclose(file);
-}
-
-int isLineInFile(char *filename, char *searchString) {
-    FILE *file = fopen(filename, "r");
-
-    if (file == NULL) {
-        printf("Could not open file %s", filename);
-        return -1;
-    }
-
-    char line[1024];
-    while (fgets(line, sizeof(line), file) != NULL) {
-        // Remove the trailing newline character
-        if (line[strlen(line) - 1] == '\n')
-            line[strlen(line) - 1] = '\0';
-
-        if (strcmp(line, searchString) == 0) {
-            fclose(file);
-            return 1;  // Found the line in the file
-        }
-    }
-
-    fclose(file);
-    return 0;  // Did not find the line in the file
 }
 
 bool isValidDeck(const char* filename) {
@@ -625,12 +577,16 @@ void createcolumns2 (Card* finalCard, column columns[]) {
         }
     }
 }
+
 bool isCardPointingToColumn(Card* card) {
     return (card->next != NULL && card->next->isColumn == true);
 }
 
 void show (Card* head, column columns[], Foundation foundation[]) {
-    if (head == NULL) startshow();
+    if (head == NULL) {
+        startshow();
+        return;
+    }
 
     Card* current = head;
     Card lastcurrent[8];
@@ -679,14 +635,6 @@ void show (Card* head, column columns[], Foundation foundation[]) {
 
     }
     printf("\n");
-}
-
-
-
-Card* unappend(Card* head){
-    Card* newHead;
-    newHead = iteratelist(lengthoflist(head) - lengthoflist(head), head);
-    return newHead;
 }
 
 int longestcolumn (column columns[]){
@@ -792,8 +740,6 @@ void startshow () {
     printf("                        ");
     printf("        []  F4");
     printf("\n");
-    printf("LAST COMMAND: ");
-    printf("\n");
 }
 
 bool parseInput(const char* input, char* filename, size_t size) {
@@ -805,7 +751,29 @@ bool parseInput(const char* input, char* filename, size_t size) {
     if (start == NULL || end == NULL || *start != '<' || *end != '>') {
         strncpy(filename, "file.txt", size - 1);
         filename[size - 1] = '\0';
-    } else if (start != NULL && end != NULL && end > start + 1) {
+    } else if (end > start + 1) {
+        // Copy the filename between '<' and '>'
+        size_t length = end - start < size ? end - start - 1 : size - 1;
+        strncpy(filename, start + 1, length);
+        filename[length] = '\0'; // Null-terminate the string
+    } else {
+        // No filename found or brackets are empty
+        filename[0] = '\0';
+        return false;
+    }
+    return true;
+}
+
+bool parseInputForSaving(const char* input, char* filename, size_t size) {
+    // Find the position of '<' and '>'
+    const char* start = strchr(input, '<');
+    const char* end = strchr(input, '>');
+
+    // Check if '<' and '>' are found in the input
+    if (start == NULL || end == NULL || *start != '<' || *end != '>') {
+        strncpy(filename, "cards.txt", size - 1);
+        filename[size - 1] = '\0';
+    } else if (end > start + 1) {
         // Copy the filename between '<' and '>'
         size_t length = end - start < size ? end - start - 1 : size - 1;
         strncpy(filename, start + 1, length);
@@ -845,7 +813,6 @@ Card* split(const char *filename, int split){
     }
     Card* pile1 = head;
 
-    int counter = 0;
     printf("%d", lengthoflist(head));
     Card* pile2 = iteratelist(split-1, head)->next;
     iteratelist(split-1, head)->next = NULL;
@@ -936,12 +903,12 @@ Card* randomShuffle(const char *filename) {
             current->next = newpile;
             newpile = current;
         } else{
-        currentnewpile = iteratelist(randomNumber-1, newpile);
+            currentnewpile = iteratelist(randomNumber-1, newpile);
 
-        current->next = currentnewpile->next;
+            current->next = currentnewpile->next;
 
-        currentnewpile->next = current;
-    }
+            currentnewpile->next = current;
+        }
         current = current2;
         //printf("length of the new pile %d \n", lengthoflist(newpile));
         //printLinkedList(newpile);
@@ -1019,30 +986,6 @@ void copyFile(const char *sourcePath, const char *destinationPath) {
     fclose(destinationFile);
 }
 
-
-
-void insertCard(Card* head, int position, Card* newCard) {
-    // If the position is less than 0, exit the function
-    if (position < 0) {
-        printf("Error: Invalid position for insertion.\n");
-        return;
-    }
-
-    // If the position is 0, insert the new card at the beginning of the list
-    if (position == 0) {
-        newCard->next = head;
-        return;
-    }
-
-    // Find the node at the position just before the insertion point
-    Card* current2 = head;
-    current2 = iteratelist(position-1, head);
-
-    // Insert the new card between the current node and the next node
-    newCard->next = current2->next;
-    current2->next = newCard;
-}
-
 void sdlCreateColumns (column columns[], Foundation foundation[], SDL_Renderer* renderer, TTF_Font* font, SDL_Rect grid[][7], SDL_Rect foundationGrid[][2]) {
     Card lastcurrent[8];
 
@@ -1075,8 +1018,7 @@ void sdlCreateColumns (column columns[], Foundation foundation[], SDL_Renderer* 
                     color.g = 20;
                     color.b = 255;
                     sprintf(text, "C%d", j + 1);
-                } else if (current->displayedChars[0] == 'C')
-                    sprintf(text, "C%d", current->displayedChars[1]);
+                }
                 else if (!(lastcurrent[j].displayedChars[0] == current->displayedChars[0] &&
                            lastcurrent[j].displayedChars[1] == current->displayedChars[1])) {
                     if (!current->facingDown) {
@@ -1175,15 +1117,14 @@ bool handleButtonEvent(Button* button, SDL_Event* event) {
     }
 }
 
-// Function to render the button
 void renderButton(Button* button, SDL_Renderer* renderer) {
     // Change the button color based on its state
     if (button->clicked) {
         SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Green if clicked
     } else if (button->hovered) {
-        SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Yellow if hovered
+        SDL_SetRenderDrawColor(renderer, 255, 255, 50, 255); // Yellow if hovered
     } else {
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Red otherwise
+        SDL_SetRenderDrawColor(renderer, 255, 50, 50, 255); // Red otherwise
     }
 
     // Render the button
@@ -1199,7 +1140,14 @@ void sdlShow (SDL_Renderer* renderer, column columns[], Foundation foundation[],
 
     for (int i = 0; i < longestcolumn(columns); ++i) {
         for (int j = 0; j < 7; ++j) {
+            if (lengthoflist(columns[j].next) < i)
+                continue;
             SDL_RenderDrawRect(renderer, &grid[i][j]);
+        }
+    }
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 2; ++j) {
+            SDL_RenderDrawRect(renderer, &foundationGrid[i][j]);
         }
     }
 }
@@ -1328,9 +1276,14 @@ void sdlExample (column columns[], Card* head, Foundation foundation[]) {
                             from->movedFromFoundation = false;
                         }
                         moveInitiated = false;
-                        while (toFoundation(columns, foundation)) { SDL_Delay(500);}
+                        while (toFoundation(columns, foundation)) {
+                            flipcard3(columns);
+                            sdlShow(renderer, columns, foundation, grid, foundationGrid, font);
+                            sdlCreateColumns(columns, foundation, renderer, font, grid, foundationGrid);
+                            SDL_RenderPresent(renderer);
+                            SDL_Delay(500);
+                        }
                         flipcard3(columns);
-//                        printf(" card %c%c  has moved ", from->displayedChars[0], from->displayedChars[1]);
                         sdlShow(renderer, columns, foundation, grid, foundationGrid, font);
                     }
                     sdlCreateColumns(columns, foundation, renderer, font, grid, foundationGrid);
@@ -1350,6 +1303,8 @@ void sdlExample (column columns[], Card* head, Foundation foundation[]) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         for (int i = 0; i < longestcolumn(columns); ++i) {
             for (int j = 0; j < 7; ++j) {
+                if (lengthoflist(columns[j].next) < i)
+                    continue;
                 SDL_RenderDrawRect(renderer, &grid[i][j]);
             }
         }
@@ -1436,19 +1391,20 @@ void sdlExample (column columns[], Card* head, Foundation foundation[]) {
 
         if (p && checkIfWon(columns)) {
             SDL_Delay(1000);
-            SDL_Window* winWindow = SDL_CreateWindow("Game won", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 300, 300, SDL_WINDOW_SHOWN);
+            SDL_Window* winWindow = SDL_CreateWindow("Game won", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 500, 300, SDL_WINDOW_SHOWN);
             SDL_Renderer* winRenderer = SDL_CreateRenderer(winWindow, -1, SDL_RENDERER_ACCELERATED);
-            SDL_Color color = {255,255,255,255};
-            SDL_Surface* winSurface = TTF_RenderText_Solid(font, "You won ;(", color);
-            SDL_Texture* tex = SDL_CreateTextureFromSurface(winRenderer, winSurface);
-            SDL_Rect dstrect = { 0, 0, 300, 100 }; // Define where on the screen we want to render the text
-            SDL_RenderCopy(winRenderer, tex, NULL, &dstrect); // Copy the texture to the renderer
+            SDL_Color color = {50,50,150,255};
+            TTF_Font* winFont = TTF_OpenFont("arial.ttf", 22);
+            SDL_Surface* winSurface = TTF_RenderText_Solid(winFont, "You won!!", color);
+            SDL_Texture* winTexture = SDL_CreateTextureFromSurface(winRenderer, winSurface);
+            SDL_Rect dstrect = { 20, 100, 450, 100 }; // Define where on the screen we want to render the text
+            SDL_RenderCopy(winRenderer, winTexture, NULL, &dstrect); // Copy the texture to the renderer
 
             SDL_RenderPresent(winRenderer);
 
             SDL_Delay(5000);
 
-            SDL_DestroyTexture(tex);
+            SDL_DestroyTexture(winTexture);
             SDL_FreeSurface(winSurface);
             SDL_DestroyRenderer(winRenderer);
             SDL_DestroyWindow(winWindow);
