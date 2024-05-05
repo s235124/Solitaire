@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include <SDL.h>
 #include <SDL_ttf.h>
-#include <ddraw.h>
-#include <SDL_image.h>
 #include <string.h>
 
 #define WINDOW_WIDTH 900

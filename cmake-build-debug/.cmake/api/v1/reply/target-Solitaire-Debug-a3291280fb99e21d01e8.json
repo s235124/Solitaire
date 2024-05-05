@@ -45,12 +45,6 @@
 				"parent" : 0
 			},
 			{
-				"command" : 1,
-				"file" : 0,
-				"line" : 18,
-				"parent" : 0
-			},
-			{
 				"command" : 2,
 				"file" : 0,
 				"line" : 10,
@@ -70,7 +64,7 @@
 			"includes" : 
 			[
 				{
-					"backtrace" : 5,
+					"backtrace" : 4,
 					"path" : "C:/Users/ziabe/Documents/sdl/SDL2-2.30.2/x86_64-w64-mingw32/include/SDL2"
 				}
 			],
@@ -124,11 +118,6 @@
 			},
 			{
 				"backtrace" : 3,
-				"fragment" : "SDL2_image.dll",
-				"role" : "libraries"
-			},
-			{
-				"backtrace" : 4,
 				"fragment" : "SDL2_ttf.dll",
 				"role" : "libraries"
 			},

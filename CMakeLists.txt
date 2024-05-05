@@ -14,5 +14,4 @@ add_executable(Solitaire
 )
 
 target_link_libraries(${PROJECT_NAME} ${SDL2_LIBRARY})
-target_link_libraries(${PROJECT_NAME} "C:/Users/ziabe/CLionProjects/Solitaire/cmake-build-debug/SDL2_image.dll")
 target_link_libraries(${PROJECT_NAME} "C:/Users/ziabe/CLionProjects/Solitaire/cmake-build-debug/SDL2_ttf.dll")
