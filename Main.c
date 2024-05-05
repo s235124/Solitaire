@@ -1187,9 +1187,11 @@ bool canYouEvenClick (column columns[], int x, int y) {
         return false;
     if (y >= longestcolumn(columns) || x > 9)
         return false;
-    if (x < 7 && lengthoflist(columns[x - 1].next) > 0 && y > lengthoflist(columns[x - 1].next) ||
-        (lengthoflist(columns[x - 1].next) == 0 && y > lengthoflist(columns[x - 1].next) + 1))
+    if (x < 7)
+        if (lengthoflist(columns[x - 1].next) > 0 && y > lengthoflist(columns[x - 1].next) ||
+            (lengthoflist(columns[x - 1].next) == 0 && y > lengthoflist(columns[x - 1].next) + 1))
         return false;
+
     return true;
 }
 
@@ -1250,12 +1252,14 @@ void sdlExample (column columns[], Card* head, Foundation foundation[]) {
 
                 if (canYouEvenClick(columns, gridX, gridY)) {
                     if (!moveInitiated) {
+                        printf("Clicked on cell (%d, %d)\n", gridX, gridY);
+                        fflush(stdout);
                         SDL_SetRenderDrawColor(renderer, 200, 200, 0, 255);
                         if (gridX <= 7) {
                             from = iteratelist(lengthoflist(columns[gridX - 1].next) - gridY, columns[gridX - 1].next);
                             SDL_RenderFillRect(renderer, &grid[gridY][gridX - 1]);
                         }
-                        else  if (gridY <= 4) {
+                        else if (gridY <= 4) {
                             from = foundation[gridY - 1].next;
                             from->movedFromFoundation = true;
                             SDL_RenderFillRect(renderer, &foundationGrid[gridY - 1][1]);
